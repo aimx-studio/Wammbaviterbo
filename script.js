@@ -1,4 +1,15 @@
 const NUMERO = "573227494157";
+async function numeroDePedido() {
+  try {
+    const dia = new Date(Date.now() - 5 * 3600000).toISOString().slice(0, 10).replace(/-/g, "");
+    const r = await fetch("https://api.counterapi.dev/v1/wammba-viterbo/pedidos-" + dia + "/up");
+    const d = await r.json();
+    return d.count || "";
+  } catch (e) {
+    return "";
+  }
+}
+
 const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeuRcRyDjlKfWj4lErGFh5s5hpohZ7lSp-ZplYeDOQLczV0ww/formResponse";
 const CAMPOS = {
   nombre: "entry.1764785994",
@@ -77,7 +88,7 @@ $("tipoPago").addEventListener("change", () => {
 
 /* ---- Envío por WhatsApp ---- */
 let enviando = false;
-$("pedidoForm").addEventListener("submit", e => {
+$("pedidoForm").addEventListener("submit", async e => {
   e.preventDefault();
   if (enviando) return;
   const platos = [...document.querySelectorAll(".check-plato:checked")].map(cb => {
@@ -90,7 +101,12 @@ $("pedidoForm").addEventListener("submit", e => {
   if (!platos.length) { alert("Selecciona al menos un plato 🍔"); return; }
 
   const entrega = $("tipoEntrega").value, pago = $("tipoPago").value;
-  let m = "🍔 *Nuevo pedido - Wammba*\n\n";
+  const btnEnv = document.querySelector(".btn");
+  btnEnv.disabled = true;
+  const numPedido = await numeroDePedido();
+  btnEnv.disabled = false;
+  const hora = new Date().toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
+  let m = "🍔 *PEDIDO" + (numPedido ? " #" + numPedido : "") + " - Wammba*\n🕘 " + hora + "\n\n";
   m += "👤 *Nombre:* " + $("nombre").value + "\n📞 *Teléfono:* " + $("telefono").value + "\n\n";
   m += "🛒 *Pedido:*\n\n" + platos.join("\n\n") + "\n\n";
   m += "📦 *Entrega:* " + entrega + "\n";
@@ -111,7 +127,7 @@ $("pedidoForm").addEventListener("submit", e => {
   const irAWhatsApp = () => { if (fue) return; fue = true; window.location.href = urlWA; };
 
   const f = new URLSearchParams();
-  f.append(CAMPOS.nombre, $("nombre").value);
+  f.append(CAMPOS.nombre, (numPedido ? "#" + numPedido + " - " : "") + $("nombre").value);
   f.append(CAMPOS.telefono, $("telefono").value);
   const aHoja = t => { const p = t.split("\n"); return p[0] + (p.length > 1 ? " (" + p.slice(1).map(x => x.replace("　• ", "")).join(", ") + ")" : ""); };
   f.append(CAMPOS.platos, platos.join("\n\n").split("\n\n").map(aHoja).join("\n"));
