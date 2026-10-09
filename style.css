@@ -83,3 +83,18 @@ footer{text-align:center;font:500 .7rem var(--f-body);letter-spacing:.08em;color
 .observacion{width:100%;resize:vertical;min-height:58px;padding:10px 12px;font:500 .9rem var(--f-body);color:var(--cream);background:rgba(255,243,220,.06);border:1px solid var(--line);border-radius:12px;transition:border-color .25s,box-shadow .25s}
 .observacion::placeholder{color:#8d7f68}
 .observacion:focus{outline:0;border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,166,35,.2)}
+
+/* Pestañas por plato */
+.unidades{margin-top:10px;font-style:normal}
+.u-hint{margin:0 0 8px;padding:7px 12px;border-radius:10px;background:var(--amber);color:var(--coal);font:700 .82rem var(--f-body);animation:uParpadeo .6s ease-in-out infinite alternate}
+.u-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.u-tabs.parpadeo .u-tab{animation:uParpadeo .6s ease-in-out infinite alternate}
+.u-tab{padding:7px 14px;font:700 .82rem var(--f-body);color:var(--cream);background:rgba(255,243,220,.06);border:1px solid var(--line);border-radius:99px;cursor:pointer;transition:background .2s,color .2s}
+.u-tab.activa{background:var(--amber);color:var(--coal);border-color:var(--amber)}
+.unidad .obs-label,.unidad .tam-label{display:block;margin:0 0 6px;font:700 .85rem var(--f-body);color:var(--amber)}
+.tam-wrap{margin-bottom:10px}
+.item:not(.multi) .tam-wrap{display:none}
+.item.multi .tamano{display:none}
+.tamano-u{width:100%;padding:9px 10px;font:600 .88rem var(--f-body);color:var(--cream);background:rgba(255,243,220,.06);border:1px solid var(--line);border-radius:10px}
+.tamano-u option{background:var(--coal2);color:var(--cream)}
+@keyframes uParpadeo{from{opacity:1}to{opacity:.35}}

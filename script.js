@@ -85,8 +85,7 @@ $("pedidoForm").addEventListener("submit", e => {
     const q = Number(it.querySelector(".cantidad").value) || 0;
     if (q <= 0) return null;
     const s = it.querySelector(".sabor, .tamano");
-    const obs = it.querySelector(".observacion")?.value.trim();
-    return "• " + q + " × " + cb.value + (s ? " (" + s.options[s.selectedIndex].text + ")" : "") + (obs ? " - Obs: " + obs : "");
+    return lineasPlato(cb, it, q);
   }).filter(Boolean);
   if (!platos.length) { alert("Selecciona al menos un plato 🍔"); return; }
 
@@ -146,21 +145,150 @@ document.addEventListener("input", e => {
   if (e.target.classList && e.target.classList.contains("cantidad")) calcularTotal();
 });
 
-/* Campo de observación dentro de cada plato */
-document.querySelectorAll(".item").forEach(item => {
-  if (item.querySelector(".observacion")) return;
+/* ---- Pestañas por plato ---- */
+function cantidadDe(item){
+  return Math.max(1, Math.floor(Number(item.querySelector(".cantidad")?.value)) || 1);
+}
+
+function crearUnidad(item){
+  const u = document.createElement("div");
+  u.className = "unidad";
+  const main = item.querySelector(".tamano");
+  let html = "";
+  if (main) html += '<div class="tam-wrap"><label class="tam-label"></label></div>';
+  html += '<label class="obs-label"></label><textarea class="observacion" rows="2" placeholder="Ej: sin hielo, poca azúcar, doble queso..."></textarea>';
+  u.innerHTML = html;
+  if (main){
+    const s = main.cloneNode(true);
+    s.removeAttribute("onchange");
+    s.className = "tamano-u";
+    s.selectedIndex = main.selectedIndex;
+    s.addEventListener("change", () => calcularTotal());
+    u.querySelector(".tam-wrap").appendChild(s);
+  }
+  return u;
+}
+
+function actualizarUnidades(item){
   let desc = item.querySelector(".descripcion");
-  if (!desc) {
+  if (!desc){
     desc = document.createElement("div");
     desc.className = "descripcion";
     desc.style.display = "none";
     item.appendChild(desc);
   }
-  const caja = document.createElement("div");
-  caja.className = "obs-caja";
-  caja.innerHTML = '<label>📝 Observación:</label><textarea class="observacion" rows="2" placeholder="Ej: sin hielo, poca azúcar, doble queso..."></textarea>';
-  desc.appendChild(caja);
+  let wrap = item.querySelector(".unidades");
+  if (!wrap){
+    wrap = document.createElement("div");
+    wrap.className = "unidades";
+    wrap.innerHTML = '<div class="u-hint" style="display:none"></div><div class="u-tabs"></div><div class="u-bloques"></div>';
+    desc.appendChild(wrap);
+  }
+  const bl = wrap.querySelector(".u-bloques");
+  const tabs = wrap.querySelector(".u-tabs");
+  const hint = wrap.querySelector(".u-hint");
+  const main = item.querySelector(".tamano");
+  const n = cantidadDe(item);
+  const nPrev = Number(wrap.dataset.n) || 1;
+  const eraMulti = item.classList.contains("multi");
+
+  while (bl.children.length > n) bl.lastElementChild.remove();
+  while (bl.children.length < n) bl.appendChild(crearUnidad(item));
+
+  const u1 = bl.children[0].querySelector(".tamano-u");
+  if (main && u1){
+    if (n > 1 && !eraMulti) u1.selectedIndex = main.selectedIndex;
+    if (n === 1 && eraMulti) main.selectedIndex = u1.selectedIndex;
+  }
+
+  const activa = Math.min(Number(tabs.dataset.activa) || 1, n);
+  tabs.dataset.activa = activa;
+  tabs.style.display = n > 1 ? "flex" : "none";
+  tabs.innerHTML = n > 1
+    ? Array.from({length: n}, (_, i) => '<button type="button" class="u-tab' + (i + 1 === activa ? ' activa' : '') + '" data-u="' + (i + 1) + '">Plato ' + (i + 1) + '</button>').join("")
+    : "";
+
+  [...bl.children].forEach((b, i) => {
+    b.style.display = (i + 1 === activa) ? "block" : "none";
+    const t = b.querySelector(".tam-label");
+    if (t) t.textContent = "🍽️ Elige tamaño o combo" + (n > 1 ? " del Plato " + (i + 1) : "") + ":";
+    b.querySelector(".obs-label").textContent = "📝 Observación" + (n > 1 ? " Plato " + (i + 1) : "") + ":";
+  });
+
+  item.classList.toggle("multi", n > 1);
+  wrap.dataset.n = n;
+
+  if (n > 1 && nPrev !== n){
+    hint.textContent = main
+      ? "👆 Toca cada pestaña: elige el tamaño y la observación de cada plato"
+      : "👆 Toca cada pestaña: escribe la observación de cada plato";
+    hint.style.display = "block";
+    tabs.classList.add("parpadeo");
+    clearTimeout(item._tu);
+    item._tu = setTimeout(() => {
+      hint.style.display = "none";
+      tabs.classList.remove("parpadeo");
+    }, 3000);
+  }
+  if (n === 1){
+    hint.style.display = "none";
+    tabs.classList.remove("parpadeo");
+  }
+  calcularTotal();
+}
+
+function lineasPlato(cb, it, q){
+  const bl = it.querySelectorAll(".unidad");
+  if (q <= 1 || !it.classList.contains("multi")){
+    const s = it.querySelector(".sabor, .tamano");
+    const obs = bl[0]?.querySelector(".observacion")?.value.trim();
+    return "• " + q + " × " + cb.value + (s ? " (" + s.options[s.selectedIndex].text + ")" : "") + (obs ? " - Obs: " + obs : "");
+  }
+  return [...bl].slice(0, q).map(b => {
+    const s = b.querySelector(".tamano-u");
+    const obs = b.querySelector(".observacion")?.value.trim();
+    return "• 1 × " + cb.value + (s ? " (" + s.options[s.selectedIndex].text + ")" : "") + (obs ? " - Obs: " + obs : "");
+  }).join("\n");
+}
+
+document.addEventListener("click", e => {
+  const t = e.target.closest ? e.target.closest(".u-tab") : null;
+  if (!t) return;
+  const wrap = t.closest(".unidades");
+  const tabs = wrap.querySelector(".u-tabs");
+  tabs.dataset.activa = t.dataset.u;
+  tabs.querySelectorAll(".u-tab").forEach(b => b.classList.toggle("activa", b === t));
+  [...wrap.querySelector(".u-bloques").children].forEach((b, i) => {
+    b.style.display = (i + 1 === Number(t.dataset.u)) ? "block" : "none";
+  });
 });
+
+document.addEventListener("change", e => {
+  if (e.target.classList && e.target.classList.contains("check-plato")) actualizarUnidades(e.target.closest(".item"));
+});
+document.addEventListener("input", e => {
+  if (e.target.classList && e.target.classList.contains("cantidad")) actualizarUnidades(e.target.closest(".item"));
+});
+
+/* ---- Total con tamaño distinto por plato ---- */
+const _calcularTotalBase = calcularTotal;
+calcularTotal = function(){
+  _calcularTotalBase();
+  let extra = 0;
+  document.querySelectorAll(".item.multi").forEach(item => {
+    const cb = item.querySelector(".check-plato");
+    const main = item.querySelector(".tamano");
+    if (!cb || !cb.checked || !main) return;
+    let suma = 0;
+    item.querySelectorAll(".tamano-u").forEach(s => suma += Number(s.value) || 0);
+    extra += suma - (Number(main.value) || 0) * cantidadDe(item);
+  });
+  if (extra){
+    const nuevo = (Number($("totalPedido").value) || 0) + extra;
+    $("total").innerText = "$" + nuevo.toLocaleString("es-CO");
+    $("totalPedido").value = nuevo;
+  }
+};
 
 /* ---- Aviso parpadeante al elegir plato con opciones ---- */
 document.addEventListener("change", e => {
