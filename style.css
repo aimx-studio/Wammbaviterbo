@@ -76,3 +76,10 @@ footer{text-align:center;font:500 .7rem var(--f-body);letter-spacing:.08em;color
 @keyframes parpadeo{from{opacity:1}to{opacity:.35}}
 @keyframes parpadeo-borde{from{box-shadow:0 0 0 0 rgba(245,166,35,.9)}to{box-shadow:0 0 0 6px rgba(245,166,35,0)}}
 @media(max-width:600px){.aviso-opcion{margin-left:6px}}
+
+/* Observación por plato */
+.obs-caja{margin-top:10px;font-style:normal}
+.obs-caja label{display:block;margin-bottom:6px;font:700 .85rem var(--f-body);color:var(--amber)}
+.observacion{width:100%;resize:vertical;min-height:58px;padding:10px 12px;font:500 .9rem var(--f-body);color:var(--cream);background:rgba(255,243,220,.06);border:1px solid var(--line);border-radius:12px;transition:border-color .25s,box-shadow .25s}
+.observacion::placeholder{color:#8d7f68}
+.observacion:focus{outline:0;border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,166,35,.2)}

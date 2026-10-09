@@ -85,7 +85,8 @@ $("pedidoForm").addEventListener("submit", e => {
     const q = Number(it.querySelector(".cantidad").value) || 0;
     if (q <= 0) return null;
     const s = it.querySelector(".sabor, .tamano");
-    return "• " + q + "x " + cb.value + (s ? " (" + s.options[s.selectedIndex].text + ")" : "");
+    const obs = it.querySelector(".observacion")?.value.trim();
+    return "• " + q + " × " + cb.value + (s ? " (" + s.options[s.selectedIndex].text + ")" : "") + (obs ? " - Obs: " + obs : "");
   }).filter(Boolean);
   if (!platos.length) { alert("Selecciona al menos un plato 🍔"); return; }
 
@@ -143,6 +144,22 @@ document.addEventListener("click", seleccionarCantidad);
 /* El total se actualiza mientras escribe */
 document.addEventListener("input", e => {
   if (e.target.classList && e.target.classList.contains("cantidad")) calcularTotal();
+});
+
+/* Campo de observación dentro de cada plato */
+document.querySelectorAll(".item").forEach(item => {
+  if (item.querySelector(".observacion")) return;
+  let desc = item.querySelector(".descripcion");
+  if (!desc) {
+    desc = document.createElement("div");
+    desc.className = "descripcion";
+    desc.style.display = "none";
+    item.appendChild(desc);
+  }
+  const caja = document.createElement("div");
+  caja.className = "obs-caja";
+  caja.innerHTML = '<label>📝 Observación:</label><textarea class="observacion" rows="2" placeholder="Ej: sin hielo, poca azúcar, doble queso..."></textarea>';
+  desc.appendChild(caja);
 });
 
 /* ---- Aviso parpadeante al elegir plato con opciones ---- */
