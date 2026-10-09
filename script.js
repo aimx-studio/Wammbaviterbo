@@ -92,7 +92,7 @@ $("pedidoForm").addEventListener("submit", e => {
   const entrega = $("tipoEntrega").value, pago = $("tipoPago").value;
   let m = "🍔 *Nuevo pedido - Wammba*\n\n";
   m += "👤 *Nombre:* " + $("nombre").value + "\n📞 *Teléfono:* " + $("telefono").value + "\n\n";
-  m += "🛒 *Pedido:*\n" + platos.join("\n") + "\n\n";
+  m += "🛒 *Pedido:*\n\n" + platos.join("\n\n") + "\n\n";
   m += "📦 *Entrega:* " + entrega + "\n";
   if (entrega === "A domicilio") m += "📍 *Dirección:* " + $("direccion").value + "\n";
   if (entrega === "Comer dentro del local") m += "🔢 *Mesa:* " + $("numeroMesa").value + "\n";
@@ -113,7 +113,8 @@ $("pedidoForm").addEventListener("submit", e => {
   const f = new URLSearchParams();
   f.append(CAMPOS.nombre, $("nombre").value);
   f.append(CAMPOS.telefono, $("telefono").value);
-  f.append(CAMPOS.platos, platos.join("\n"));
+  const aHoja = t => { const p = t.split("\n"); return p[0] + (p.length > 1 ? " (" + p.slice(1).map(x => x.replace("　• ", "")).join(", ") + ")" : ""); };
+  f.append(CAMPOS.platos, platos.join("\n\n").split("\n\n").map(aHoja).join("\n"));
   f.append(CAMPOS.entrega, entrega);
   f.append(CAMPOS.direccion, entrega === "A domicilio" ? $("direccion").value : (entrega === "Comer dentro del local" ? "Mesa " + $("numeroMesa").value : ""));
   f.append(CAMPOS.pago, pago);
@@ -238,17 +239,28 @@ function actualizarUnidades(item){
 }
 
 function lineasPlato(cb, it, q){
-  const bl = it.querySelectorAll(".unidad");
-  if (q <= 1 || !it.classList.contains("multi")){
-    const s = it.querySelector(".sabor, .tamano");
-    const obs = bl[0]?.querySelector(".observacion")?.value.trim();
-    return "• " + q + " × " + cb.value + (s ? " (" + s.options[s.selectedIndex].text + ")" : "") + (obs ? " - Obs: " + obs : "");
-  }
-  return [...bl].slice(0, q).map(b => {
-    const s = b.querySelector(".tamano-u");
-    const obs = b.querySelector(".observacion")?.value.trim();
-    return "• 1 × " + cb.value + (s ? " (" + s.options[s.selectedIndex].text + ")" : "") + (obs ? " - Obs: " + obs : "");
-  }).join("\n");
+  const bl = [...it.querySelectorAll(".unidad")];
+  const multi = q > 1 && it.classList.contains("multi");
+  const unidades = multi
+    ? bl.slice(0, q).map(b => {
+        const s = b.querySelector(".tamano-u");
+        return { tam: s ? s.options[s.selectedIndex].text : "", obs: b.querySelector(".observacion")?.value.trim() || "" };
+      })
+    : [(() => {
+        const s = it.querySelector(".sabor, .tamano");
+        return { tam: s ? s.options[s.selectedIndex].text : "", obs: bl[0]?.querySelector(".observacion")?.value.trim() || "" };
+      })()];
+  const grupos = [];
+  unidades.forEach(u => {
+    const g = grupos.find(x => x.tam === u.tam && x.obs === u.obs);
+    if (g) g.n++; else grupos.push({ tam: u.tam, obs: u.obs, n: 1 });
+  });
+  return grupos.map(g => {
+    let t = (multi ? g.n : q) + " × " + cb.value;
+    if (g.tam) t += "\n　• " + g.tam;
+    if (g.obs) t += "\n　• Observación: " + g.obs;
+    return t;
+  }).join("\n\n");
 }
 
 document.addEventListener("click", e => {
